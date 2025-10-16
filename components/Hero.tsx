@@ -53,12 +53,15 @@ export default function Hero() {
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center animate-slide-up delay-200">
               <Button 
                 size="lg"
+                onClick={() => {
+                  document.getElementById('products-section')?.scrollIntoView({ behavior: 'smooth' });
+                }}
                 className="bg-white text-primary hover:bg-gray-50 shadow-2xl hover:shadow-3xl hover:scale-105 transition-all duration-300 px-8 py-6 text-lg font-semibold group"
               >
                 Shop Collection
                 <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
               </Button>
-              
+          
             </div>
 
             {/* Feature Cards */}

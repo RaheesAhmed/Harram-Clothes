@@ -1,119 +1,102 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabase/client';
 import Header from '@/components/Header';
 import Hero from '@/components/Hero';
 import Footer from '@/components/Footer';
 import ProductCard from '@/components/ProductCard';
-import { Product } from '@/types';
+import Cart from '@/components/Cart';
+import { Product, CartItem } from '@/types';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-
-const MOCK_PRODUCTS: Product[] = [
-  {
-    id: '1',
-    name_en: 'Premium Velvet Shanel',
-    category: 'Velvet Shanel',
-    price: 2500,
-    description_en: 'High-quality velvet shanel with intricate embroidery',
-    image_url: 'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=400&h=533&fit=crop',
-    stock_status: true,
-    created_at: new Date().toISOString(),
-  },
-  {
-    id: '2',
-    name_en: 'Classic Kadar',
-    category: 'Kadar',
-    price: 1800,
-    description_en: 'Traditional kadar with modern design',
-    image_url: 'https://images.unsplash.com/photo-1591047139829-d91aecb6caea?w=400&h=533&fit=crop',
-    stock_status: true,
-    created_at: new Date().toISOString(),
-  },
-  {
-    id: '3',
-    name_en: 'Elegant Carandi',
-    category: 'Carandi',
-    price: 2200,
-    description_en: 'Beautiful carandi with delicate details',
-    image_url: 'https://images.unsplash.com/photo-1539533113208-f6df8cc8b543?w=400&h=533&fit=crop',
-    stock_status: true,
-    created_at: new Date().toISOString(),
-  },
-  {
-    id: '4',
-    name_en: 'Luxury Velvet Shanel',
-    category: 'Velvet Shanel',
-    price: 3000,
-    description_en: 'Premium quality velvet with golden embellishments',
-    image_url: 'https://images.unsplash.com/photo-1596783074918-c84cb06531ca?w=400&h=533&fit=crop',
-    stock_status: true,
-    created_at: new Date().toISOString(),
-  },
-  {
-    id: '5',
-    name_en: 'Designer Kadar',
-    category: 'Kadar',
-    price: 2100,
-    description_en: 'Contemporary kadar with unique patterns',
-    image_url: 'https://images.unsplash.com/photo-1593030761757-71fae45fa0e7?w=400&h=533&fit=crop',
-    stock_status: true,
-    created_at: new Date().toISOString(),
-  },
-  {
-    id: '6',
-    name_en: 'Royal Carandi',
-    category: 'Carandi',
-    price: 2800,
-    description_en: 'Exquisite carandi with royal finish',
-    image_url: 'https://images.unsplash.com/photo-1594633312681-425c7b97ccd1?w=400&h=533&fit=crop',
-    stock_status: false,
-    created_at: new Date().toISOString(),
-  },
-  {
-    id: '7',
-    name_en: 'Embroidered Velvet Shanel',
-    category: 'Velvet Shanel',
-    price: 2700,
-    description_en: 'Hand-embroidered velvet shanel',
-    image_url: 'https://images.unsplash.com/photo-1617019114583-affb34d1b3cd?w=400&h=533&fit=crop',
-    stock_status: true,
-    created_at: new Date().toISOString(),
-  },
-  {
-    id: '8',
-    name_en: 'Traditional Kadar',
-    category: 'Kadar',
-    price: 1900,
-    description_en: 'Classic traditional kadar design',
-    image_url: 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=400&h=533&fit=crop',
-    stock_status: true,
-    created_at: new Date().toISOString(),
-  },
-];
-
-const CATEGORIES = ['All', 'Kadar', 'Velvet Shanel', 'Carandi'];
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function Home() {
+  const router = useRouter();
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState('All');
-  const [cart, setCart] = useState<Product[]>([]);
+  const [cart, setCart] = useState<CartItem[]>([]);
+  const [isCartOpen, setIsCartOpen] = useState(false);
+
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
+  const fetchProducts = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .eq('stock_status', true)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setProducts(data || []);
+    } catch (error) {
+      console.error('Error fetching products:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const categories = ['All', ...Array.from(new Set(products.map(p => p.category)))];
 
   const filteredProducts = selectedCategory === 'All' 
-    ? MOCK_PRODUCTS 
-    : MOCK_PRODUCTS.filter(product => product.category === selectedCategory);
+    ? products 
+    : products.filter(product => product.category === selectedCategory);
 
   const handleAddToCart = (product: Product) => {
-    setCart(prev => [...prev, product]);
+    setCart(prev => {
+      const existingItem = prev.find(item => item.id === product.id);
+      
+      if (existingItem) {
+        return prev.map(item =>
+          item.id === product.id
+            ? { ...item, quantity: item.quantity + 1 }
+            : item
+        );
+      }
+      
+      return [...prev, { ...product, quantity: 1 }];
+    });
+    
+    setIsCartOpen(true);
   };
+
+  const handleUpdateQuantity = (productId: string, quantity: number) => {
+    setCart(prev =>
+      prev.map(item =>
+        item.id === productId ? { ...item, quantity } : item
+      )
+    );
+  };
+
+  const handleRemoveItem = (productId: string) => {
+    setCart(prev => prev.filter(item => item.id !== productId));
+  };
+
+  const handleCheckout = () => {
+    router.push('/checkout');
+    setIsCartOpen(false);
+  };
+
+  const cartItemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
   return (
     <div className="min-h-screen bg-white">
-      <Header cartItemCount={cart.length} onCartClick={() => {}} />
+      <Header 
+        cartItemCount={cartItemCount} 
+        onCartClick={() => setIsCartOpen(true)}
+        onAddToCart={handleAddToCart}
+      />
       
       <main>
         <Hero />
 
-        <div className="container">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" id="products-section">
           {/* Category Filter Section */}
           <div className="py-8 md:py-12">
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6">
@@ -132,10 +115,10 @@ export default function Home() {
 
             <Tabs value={selectedCategory} onValueChange={setSelectedCategory} className="w-full">
               <TabsList className="w-full h-auto flex-wrap justify-start gap-2 bg-gray-100/50 p-2 rounded-xl">
-                {CATEGORIES.map((category) => {
+                {categories.map((category) => {
                   const count = category === 'All' 
-                    ? MOCK_PRODUCTS.length 
-                    : MOCK_PRODUCTS.filter(p => p.category === category).length;
+                    ? products.length 
+                    : products.filter(p => p.category === category).length;
                   
                   return (
                     <TabsTrigger
@@ -157,7 +140,21 @@ export default function Home() {
             </Tabs>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6 mb-8">
+          {loading ? (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6 mb-8">
+              {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+                <div key={i} className="bg-white rounded-xl overflow-hidden">
+                  <Skeleton className="aspect-[3/4] w-full" />
+                  <div className="p-4 space-y-2">
+                    <Skeleton className="h-5 w-3/4" />
+                    <Skeleton className="h-4 w-1/2" />
+                    <Skeleton className="h-9 w-full mt-3" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6 mb-8">
             {filteredProducts.map((product) => (
               <ProductCard 
                 key={product.id} 
@@ -166,8 +163,9 @@ export default function Home() {
               />
             ))}
           </div>
+          )}
 
-          {filteredProducts.length === 0 && (
+          {!loading && filteredProducts.length === 0 && (
             <div className="text-center py-12">
               <p className="text-xl text-gray-500">No products found in this category</p>
             </div>
@@ -176,6 +174,16 @@ export default function Home() {
       </main>
 
       <Footer />
+
+      {/* Cart Sidebar */}
+      <Cart
+        isOpen={isCartOpen}
+        onClose={() => setIsCartOpen(false)}
+        items={cart}
+        onUpdateQuantity={handleUpdateQuantity}
+        onRemoveItem={handleRemoveItem}
+        onCheckout={handleCheckout}
+      />
     </div>
   );
 }
