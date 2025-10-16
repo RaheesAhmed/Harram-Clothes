@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
-import { LayoutDashboard, Package, LogOut, Menu, X } from 'lucide-react';
+import { LayoutDashboard, Package, LogOut, Menu, X, ShoppingBag } from 'lucide-react';
 import Link from 'next/link';
 import Logo from '@/components/Logo';
 
@@ -41,6 +41,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const menuItems = [
     { icon: LayoutDashboard, label: 'Dashboard', href: '/admin/dashboard' },
     { icon: Package, label: 'Products', href: '/admin/products' },
+    { icon: ShoppingBag, label: 'Orders', href: '/admin/orders' },
   ];
 
   return (

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { ShoppingCart, Search, Menu, Phone } from 'lucide-react';
+import { ShoppingCart, Search, Menu, Phone, Package } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
 import { Product } from '@/types';
 import Logo from './Logo';
@@ -165,18 +165,30 @@ export default function Header({ cartItemCount = 0, onCartClick, onAddToCart }: 
               </div>
             </div>
 
-            {/* Action Buttons */}
-            <div className="flex items-center gap-2">
-              {/* Mobile Search */}
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="md:hidden hover:bg-gray-100 rounded-full"
-              >
-                <Search className="w-5 h-5" />
-              </Button>
+          {/* Action Buttons */}
+          <div className="flex items-center gap-2">
+            {/* Track Order - Desktop */}
+            <Button
+              asChild
+              variant="ghost"
+              className="hidden md:flex hover:bg-gray-100 rounded-full"
+            >
+              <a href="/track-order">
+                <Package className="w-4 h-4 mr-2" />
+                Track Order
+              </a>
+            </Button>
 
-              {/* Cart */}
+            {/* Mobile Search */}
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="md:hidden hover:bg-gray-100 rounded-full"
+            >
+              <Search className="w-5 h-5" />
+            </Button>
+
+            {/* Cart */}
               <Button
                 onClick={onCartClick}
                 variant="ghost"
@@ -215,20 +227,26 @@ export default function Header({ cartItemCount = 0, onCartClick, onAddToCart }: 
                       placeholder="Search products..."
                       className="w-full"
                     />
-                    <div className="space-y-2">
-                      <Button variant="ghost" className="w-full justify-start">
-                        All Products
-                      </Button>
-                      <Button variant="ghost" className="w-full justify-start">
-                        Kadar
-                      </Button>
-                      <Button variant="ghost" className="w-full justify-start">
-                        Velvet Shanel
-                      </Button>
-                      <Button variant="ghost" className="w-full justify-start">
-                        Carandi
-                      </Button>
-                    </div>
+                  <div className="space-y-2">
+                    <Button asChild variant="ghost" className="w-full justify-start">
+                      <a href="/track-order">
+                        <Package className="w-4 h-4 mr-2" />
+                        Track Order
+                      </a>
+                    </Button>
+                    <Button variant="ghost" className="w-full justify-start">
+                      All Products
+                    </Button>
+                    <Button variant="ghost" className="w-full justify-start">
+                      Kadar
+                    </Button>
+                    <Button variant="ghost" className="w-full justify-start">
+                      Velvet Shanel
+                    </Button>
+                    <Button variant="ghost" className="w-full justify-start">
+                      Carandi
+                    </Button>
+                  </div>
                   </div>
                 </SheetContent>
               </Sheet>

@@ -3,20 +3,21 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { CartItem } from '@/types';
-import { sendToWhatsApp } from '@/lib/utils/whatsapp';
+import { supabase } from '@/lib/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, ShoppingBag, Send } from 'lucide-react';
+import { ArrowLeft, ShoppingBag, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 
 export default function CheckoutPage() {
   const router = useRouter();
   const [cart, setCart] = useState<CartItem[]>([]);
+  const [submitting, setSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
@@ -31,10 +32,10 @@ export default function CheckoutPage() {
   }, []);
 
   const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  const delivery = 0; // Free delivery
+  const delivery = 0;
   const total = subtotal + delivery;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (cart.length === 0) {
@@ -42,22 +43,36 @@ export default function CheckoutPage() {
       return;
     }
 
-    // Send to WhatsApp
-    sendToWhatsApp({
-      customerName: formData.name,
-      phone: formData.phone,
-      address: formData.address,
-      items: cart,
-      total,
-    });
+    setSubmitting(true);
 
-    // Clear cart
-    localStorage.removeItem('cart');
-    
-    // Redirect to home after a short delay
-    setTimeout(() => {
-      router.push('/');
-    }, 1000);
+    try {
+      // Save order to database
+      const { data, error } = await supabase
+        .from('orders')
+        .insert({
+          customer_name: formData.name,
+          phone: formData.phone,
+          address: formData.address,
+          products: cart,
+          total_amount: total,
+          status: 'pending',
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Clear cart
+      localStorage.removeItem('cart');
+      
+      // Redirect to success page with order ID
+      router.push(`/checkout/success?order=${data.id}`);
+    } catch (error) {
+      console.error('Error placing order:', error);
+      alert('Failed to place order. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   if (cart.length === 0) {
@@ -82,7 +97,6 @@ export default function CheckoutPage() {
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
         <div className="mb-8">
           <Button variant="ghost" asChild className="mb-4">
             <Link href="/">
@@ -95,7 +109,6 @@ export default function CheckoutPage() {
         </div>
 
         <div className="grid lg:grid-cols-2 gap-8">
-          {/* Checkout Form */}
           <div>
             <Card>
               <CardHeader>
@@ -112,6 +125,7 @@ export default function CheckoutPage() {
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                       placeholder="Enter your full name"
                       required
+                      disabled={submitting}
                     />
                   </div>
 
@@ -124,6 +138,7 @@ export default function CheckoutPage() {
                       onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                       placeholder="03XX XXXXXXX"
                       required
+                      disabled={submitting}
                     />
                   </div>
 
@@ -136,6 +151,7 @@ export default function CheckoutPage() {
                       placeholder="House No, Street, Area, City"
                       rows={4}
                       required
+                      disabled={submitting}
                     />
                   </div>
 
@@ -150,18 +166,24 @@ export default function CheckoutPage() {
 
                   <Button
                     type="submit"
+                    disabled={submitting}
                     className="w-full bg-primary hover:bg-primary-hover py-6 text-lg"
                     size="lg"
                   >
-                    <Send className="w-5 h-5 mr-2" />
-                    Send Order via WhatsApp
+                    {submitting ? (
+                      <>
+                        <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                        Placing Order...
+                      </>
+                    ) : (
+                      'Place Order'
+                    )}
                   </Button>
                 </form>
               </CardContent>
             </Card>
           </div>
 
-          {/* Order Summary */}
           <div>
             <Card className="sticky top-8">
               <CardHeader>
@@ -169,7 +191,6 @@ export default function CheckoutPage() {
                 <CardDescription>{cart.length} {cart.length === 1 ? 'item' : 'items'} in cart</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                {/* Cart Items */}
                 <div className="space-y-3 max-h-96 overflow-y-auto">
                   {cart.map((item) => (
                     <div key={item.id} className="flex gap-3 p-3 bg-gray-50 rounded-lg">
@@ -192,7 +213,6 @@ export default function CheckoutPage() {
                   ))}
                 </div>
 
-                {/* Price Summary */}
                 <div className="border-t pt-4 space-y-2">
                   <div className="flex justify-between text-gray-600">
                     <span>Subtotal</span>
