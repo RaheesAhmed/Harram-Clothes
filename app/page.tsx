@@ -2,8 +2,12 @@
 
 import { useState } from 'react';
 import Header from '@/components/Header';
+import Hero from '@/components/Hero';
+import Footer from '@/components/Footer';
 import ProductCard from '@/components/ProductCard';
 import { Product } from '@/types';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
 
 const MOCK_PRODUCTS: Product[] = [
   {
@@ -107,26 +111,50 @@ export default function Home() {
       <Header cartItemCount={cart.length} onCartClick={() => {}} />
       
       <main>
-        <div className="hero">
-          <div className="container">
-            <h1 className="hero-title">Welcome to Harram Clothes</h1>
-            <p className="hero-subtitle">
-              Premium Quality Clothing • Free Delivery • Cash on Delivery
-            </p>
-          </div>
-        </div>
+        <Hero />
 
         <div className="container">
-          <div className="category-filter">
-            {CATEGORIES.map((category) => (
-              <button
-                key={category}
-                onClick={() => setSelectedCategory(category)}
-                className={`category-btn ${selectedCategory === category ? 'active' : ''}`}
-              >
-                {category}
-              </button>
-            ))}
+          {/* Category Filter Section */}
+          <div className="py-8 md:py-12">
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6">
+              <div>
+                <h2 className="text-2xl md:text-3xl font-bold text-gray-900">
+                  Shop by Category
+                </h2>
+                <p className="text-sm text-gray-600 mt-1">
+                  Explore our premium collection
+                </p>
+              </div>
+              <Badge variant="secondary" className="bg-primary/10 text-primary border-0">
+                {filteredProducts.length} Products
+              </Badge>
+            </div>
+
+            <Tabs value={selectedCategory} onValueChange={setSelectedCategory} className="w-full">
+              <TabsList className="w-full h-auto flex-wrap justify-start gap-2 bg-gray-100/50 p-2 rounded-xl">
+                {CATEGORIES.map((category) => {
+                  const count = category === 'All' 
+                    ? MOCK_PRODUCTS.length 
+                    : MOCK_PRODUCTS.filter(p => p.category === category).length;
+                  
+                  return (
+                    <TabsTrigger
+                      key={category}
+                      value={category}
+                      className="data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-primary/30 rounded-lg px-6 py-3 font-semibold transition-all duration-300 hover:bg-white"
+                    >
+                      <span>{category}</span>
+                      <Badge 
+                        variant="secondary" 
+                        className="ml-2 data-[state=active]:bg-white/20 data-[state=active]:text-white bg-gray-200 text-gray-700 border-0"
+                      >
+                        {count}
+                      </Badge>
+                    </TabsTrigger>
+                  );
+                })}
+              </TabsList>
+            </Tabs>
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6 mb-8">
@@ -147,37 +175,7 @@ export default function Home() {
         </div>
       </main>
 
-      <footer className="bg-gray-50 border-t border-gray-200 mt-12">
-        <div className="container py-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div>
-              <h3 className="font-bold text-lg mb-4 text-primary">Harram Clothes</h3>
-              <p className="text-sm text-gray-600">
-                Premium quality clothing in Peshawar. Shop the finest collection of traditional wear.
-              </p>
-            </div>
-            
-            <div>
-              <h4 className="font-semibold mb-4">Contact</h4>
-              <p className="text-sm text-gray-600 mb-2">📞 +92 317 9511031</p>
-              <p className="text-sm text-gray-600 mb-2">📍 Peshawar, Pakistan</p>
-            </div>
-            
-            <div>
-              <h4 className="font-semibold mb-4">Information</h4>
-              <p className="text-sm text-gray-600 mb-2">✓ Free Delivery Across Pakistan</p>
-              <p className="text-sm text-gray-600 mb-2">✓ Cash on Delivery Available</p>
-              <p className="text-sm text-gray-600">✓ 100% Quality Guarantee</p>
-            </div>
-          </div>
-          
-          <div className="border-t border-gray-200 mt-8 pt-6 text-center">
-            <p className="text-sm text-gray-600">
-              © 2025 Harram Clothes. All rights reserved.
-            </p>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }
